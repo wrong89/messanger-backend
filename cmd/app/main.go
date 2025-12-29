@@ -1,34 +1,62 @@
 package main
 
 import (
-	"context"
-	"fmt"
+	"io"
 	"log/slog"
+	"messanger/internal/lib/logger/handlers/slogpretty"
 	"os"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
+)
+
+const (
+	envLocal = "local"
+	envDev   = "dev"
+	envProd  = "prod"
 )
 
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		slog.Error("env not found", slog.String("err", err.Error()))
 		panic(err)
 	}
 
-	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
-	if err != nil {
-		fmt.Println("ERROR connecting to DB:", err)
-		os.Exit(1)
-	}
-	defer conn.Close(context.Background())
+	log := setupLogger(envLocal, os.Stdout)
 
-	// Проверяем соединение
-	if err := conn.Ping(context.Background()); err != nil {
-		fmt.Println("PING ERROR:", err)
-		os.Exit(1)
+	log.Info("TEST", slog.String("something", "Hello World"))
+
+	log.Debug("debug")
+
+	log.Error("something")
+}
+
+func setupLogger(env string, out io.Writer) *slog.Logger {
+	var log *slog.Logger
+
+	switch env {
+	case envLocal:
+		log = setupPrettySlog(out)
+	case envDev:
+		log = slog.New(
+			slog.NewJSONHandler(out, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envProd:
+		log = slog.New(
+			slog.NewJSONHandler(out, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
 	}
 
-	fmt.Println("SUCCESS PING")
+	return log
+}
+
+func setupPrettySlog(out io.Writer) *slog.Logger {
+	opts := slogpretty.PrettyHandlerOptions{
+		SlogOpts: &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		},
+	}
+
+	handler := opts.NewPrettyHandler(out)
+
+	return slog.New(handler)
 }
