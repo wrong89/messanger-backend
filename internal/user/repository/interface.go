@@ -17,6 +17,6 @@ type UserReader interface {
 
 type UserWriter interface {
 	Create(ctx context.Context, user user.User) (uint64, error)
-	Update(ctx context.Context, user user.User) error
+	Update(ctx context.Context, newUser user.User) error
 	Delete(ctx context.Context, id uint64) error
 }
