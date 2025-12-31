@@ -32,6 +32,22 @@ func (r RegisterReqDTO) Validate() error {
 	return nil
 }
 
+type LoginReqDTO struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
+func (r LoginReqDTO) Validate() error {
+	if r.Login == "" {
+		return ErrLoginIsEmpty
+	}
+	if r.Password == "" {
+		return ErrPasswordIsEmpty
+	}
+
+	return nil
+}
+
 type ErrorDTO struct {
 	Message string    `json:"message"`
 	Time    time.Time `json:"time"`

@@ -47,6 +47,7 @@ func main() {
 	r.Route("/user", func(r chi.Router) {
 
 		r.Post("/register", handler.Register)
+		r.Post("/login", handler.Login)
 	})
 
 	// http.HandleFunc("/register", handler.Register)

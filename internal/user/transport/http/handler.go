@@ -23,7 +23,7 @@ func NewUserHandler(log *slog.Logger, auth usecase.AuthUC) *UserHandler {
 }
 
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
-	const op = "user.http.handler.RegisterHandler"
+	const op = "user.http.handler.Register"
 
 	log := h.log.With(
 		slog.String("op", op),
@@ -33,12 +33,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&registerDTO); err != nil {
 		errDTO := NewErrorDTO(err)
-		if errors.Is(err, repository.ErrUserAlreadyExist) {
-			log.Warn(errDTO.String(), sl.Err(err))
-			http.Error(w, errDTO.String(), http.StatusConflict)
-			return
-		}
-
+		log.Warn(errDTO.String(), sl.Err(err))
 		http.Error(w, errDTO.String(), http.StatusInternalServerError)
 		return
 	}
@@ -67,5 +62,44 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		ID: uid,
 	}
 
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
+	const op = "user.http.handler.Login"
+
+	log := h.log.With(
+		slog.String("op", op),
+	)
+
+	var loginReqDTO LoginReqDTO
+
+	if err := json.NewDecoder(r.Body).Decode(&loginReqDTO); err != nil {
+		errDTO := NewErrorDTO(err)
+		if errors.Is(err, repository.ErrUserAlreadyExist) {
+			log.Warn(errDTO.String(), sl.Err(err))
+			http.Error(w, errDTO.String(), http.StatusConflict)
+			return
+		}
+
+		http.Error(w, errDTO.String(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := loginReqDTO.Validate(); err != nil {
+		errDTO := NewErrorDTO(err)
+		log.Error("validation error", sl.Err(err))
+		http.Error(w, errDTO.String(), http.StatusBadRequest)
+		return
+	}
+
+	token, err := h.auth.Login(r.Context(), loginReqDTO.Login, loginReqDTO.Password)
+	if err != nil {
+		errDTO := NewErrorDTO(usecase.ErrInvalidCredentials)
+		http.Error(w, errDTO.String(), http.StatusBadRequest)
+		return
+	}
+
+	resp := LoginRes{Token: token}
 	json.NewEncoder(w).Encode(resp)
 }
