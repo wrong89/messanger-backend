@@ -52,12 +52,13 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	uid, err := h.auth.Register(r.Context(), registerDTO.Name, registerDTO.Login, registerDTO.Password)
 	if err != nil {
-		errDTO := NewErrorDTO(err)
 		if errors.Is(err, repository.ErrUserAlreadyExist) {
+			errDTO := NewErrorDTO(repository.ErrUserAlreadyExist)
 			http.Error(w, errDTO.String(), http.StatusConflict)
 			return
 		}
 
+		errDTO := NewErrorDTO(err)
 		http.Error(w, errDTO.String(), http.StatusInternalServerError)
 		return
 	}

@@ -49,7 +49,7 @@ func (a *Auth) Register(ctx context.Context, name, login, password string) (uint
 
 	_, err := a.userRepo.GetByLogin(ctx, login)
 	if err == nil {
-		log.Warn("user already exist", sl.Err(err))
+		log.Warn("user already exist")
 		return 0, fmt.Errorf("%s: %w", op, repository.ErrUserAlreadyExist)
 	}
 

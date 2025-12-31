@@ -12,6 +12,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
 
@@ -38,11 +39,18 @@ func main() {
 		panic(err)
 	}
 
+	r := chi.NewRouter()
+	// r.Use(middleware.Logger)
 	auth := usecase.NewAuth(log, storage, os.Getenv("JWT_SECRET"), time.Hour*24)
 	handler := userHTTP.NewUserHandler(log, auth)
 
-	http.HandleFunc("/register", handler.Register)
-	http.ListenAndServe(":9091", nil)
+	r.Route("/user", func(r chi.Router) {
+
+		r.Post("/register", handler.Register)
+	})
+
+	// http.HandleFunc("/register", handler.Register)
+	http.ListenAndServe(":3000", r)
 }
 
 func setupLogger(env string, out io.Writer) *slog.Logger {
