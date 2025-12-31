@@ -1,10 +1,16 @@
 package main
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"messanger/internal/lib/logger/handlers/slogpretty"
+	"messanger/internal/user/repository"
+	userHTTP "messanger/internal/user/transport/http"
+	"messanger/internal/user/usecase"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -21,13 +27,22 @@ func main() {
 		panic(err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	log := setupLogger(envLocal, os.Stdout)
+	log.Info("test")
 
-	log.Info("TEST", slog.String("something", "Hello World"))
+	storage, err := repository.New(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		panic(err)
+	}
 
-	log.Debug("debug")
+	auth := usecase.NewAuth(log, storage, os.Getenv("JWT_SECRET"), time.Hour*24)
+	handler := userHTTP.NewUserHandler(log, auth)
 
-	log.Error("something")
+	http.HandleFunc("/register", handler.Register)
+	http.ListenAndServe(":9091", nil)
 }
 
 func setupLogger(env string, out io.Writer) *slog.Logger {
