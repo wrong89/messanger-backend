@@ -29,12 +29,18 @@ func main() {
 		panic(err)
 	}
 
+	var (
+		DATABASE_URL = os.Getenv("DATABASE_URL")
+		JWT_SECRET   = os.Getenv("JWT_SECRET")
+		SERVER_ADDR  = os.Getenv("SERVER_ADDR")
+	)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	log := setupLogger(envLocal, os.Stdout)
 
-	storage, err := repository.New(ctx, os.Getenv("DATABASE_URL"))
+	storage, err := repository.New(ctx, DATABASE_URL)
 	if err != nil {
 		panic(err)
 	}
@@ -43,15 +49,16 @@ func main() {
 	r.Use(middleware.Logger)
 
 	r.Route("/user", func(r chi.Router) {
-		auth := usecase.NewAuth(log, storage, os.Getenv("JWT_SECRET"), time.Hour*24)
+		auth := usecase.NewAuth(log, storage, JWT_SECRET, time.Hour*24)
 		handler := userHTTP.NewUserHandler(log, auth)
 
 		r.Post("/register", handler.Register)
 		r.Post("/login", handler.Login)
 	})
 
-	// http.HandleFunc("/register", handler.Register)
-	http.ListenAndServe(":3000", r)
+	if err := http.ListenAndServe(SERVER_ADDR, r); err != nil {
+		panic(err)
+	}
 }
 
 func setupLogger(env string, out io.Writer) *slog.Logger {
