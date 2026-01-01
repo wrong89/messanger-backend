@@ -56,6 +56,7 @@ func main() {
 		r.Post("/login", handler.Login)
 	})
 
+	log.Info("trying to start server...", slog.String("addr", SERVER_ADDR))
 	if err := http.ListenAndServe(SERVER_ADDR, r); err != nil {
 		panic(err)
 	}
