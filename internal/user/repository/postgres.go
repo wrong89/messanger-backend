@@ -118,7 +118,7 @@ func (s *Storage) GetByID(ctx context.Context, id uint64) (user.User, error) {
 func (s *Storage) GetByLogin(ctx context.Context, login string) (user.User, error) {
 	const op = "user.repository.postgres.GetByLogin"
 
-	sql := `SELECT id, name, login, created_at FROM users WHERE login = @login`
+	sql := `SELECT id, name, login, password_hash, created_at FROM users WHERE login = @login`
 	args := pgx.NamedArgs{
 		"login": login,
 	}
@@ -129,6 +129,7 @@ func (s *Storage) GetByLogin(ctx context.Context, login string) (user.User, erro
 		&usr.ID,
 		&usr.Name,
 		&usr.Login,
+		&usr.PasswordHash,
 		&usr.CreatedAt,
 	)
 	if err != nil {

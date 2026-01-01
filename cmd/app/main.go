@@ -12,6 +12,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -32,7 +33,6 @@ func main() {
 	defer cancel()
 
 	log := setupLogger(envLocal, os.Stdout)
-	log.Info("test")
 
 	storage, err := repository.New(ctx, os.Getenv("DATABASE_URL"))
 	if err != nil {
@@ -40,11 +40,11 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-	// r.Use(middleware.Logger)
-	auth := usecase.NewAuth(log, storage, os.Getenv("JWT_SECRET"), time.Hour*24)
-	handler := userHTTP.NewUserHandler(log, auth)
+	r.Use(middleware.Logger)
 
 	r.Route("/user", func(r chi.Router) {
+		auth := usecase.NewAuth(log, storage, os.Getenv("JWT_SECRET"), time.Hour*24)
+		handler := userHTTP.NewUserHandler(log, auth)
 
 		r.Post("/register", handler.Register)
 		r.Post("/login", handler.Login)
