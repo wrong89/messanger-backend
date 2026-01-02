@@ -50,10 +50,13 @@ func main() {
 
 	r.Route("/user", func(r chi.Router) {
 		auth := usecase.NewAuth(log, storage, JWT_SECRET, time.Hour*24)
-		handler := userHTTP.NewUserHandler(log, auth)
+		profile := usecase.NewProfile(log, storage)
+		handler := userHTTP.NewUserHandler(log, auth, profile)
 
 		r.Post("/register", handler.Register)
 		r.Post("/login", handler.Login)
+
+		r.With(userHTTP.AuthMiddleware).Delete("/delete/{id}", handler.Delete)
 	})
 
 	log.Info("trying to start server...", slog.String("addr", SERVER_ADDR))

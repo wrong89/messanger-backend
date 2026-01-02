@@ -8,17 +8,22 @@ import (
 	"messanger/internal/user/repository"
 	"messanger/internal/user/usecase"
 	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type UserHandler struct {
-	log  *slog.Logger
-	auth usecase.AuthUC
+	log     *slog.Logger
+	auth    usecase.AuthUC
+	profile usecase.ProfileUC
 }
 
-func NewUserHandler(log *slog.Logger, auth usecase.AuthUC) *UserHandler {
+func NewUserHandler(log *slog.Logger, auth usecase.AuthUC, profile usecase.ProfileUC) *UserHandler {
 	return &UserHandler{
-		log:  log,
-		auth: auth,
+		log:     log,
+		auth:    auth,
+		profile: profile,
 	}
 }
 
@@ -76,12 +81,6 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&loginReqDTO); err != nil {
 		errDTO := NewErrorDTO(err)
-		if errors.Is(err, repository.ErrUserAlreadyExist) {
-			log.Warn(errDTO.String(), sl.Err(err))
-			http.Error(w, errDTO.String(), http.StatusConflict)
-			return
-		}
-
 		http.Error(w, errDTO.String(), http.StatusInternalServerError)
 		return
 	}
@@ -102,4 +101,41 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	resp := LoginRes{Token: token}
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	const op = "user.http.handler.Delete"
+
+	log := h.log.With(
+		slog.String("op", op),
+	)
+
+	uidStr := chi.URLParam(r, "id")
+	if uidStr == "" {
+		log.Warn("id not found")
+		http.Error(w, "id not found", http.StatusBadRequest)
+		return
+	}
+
+	uid, err := strconv.Atoi(uidStr)
+	if err != nil {
+		errDTO := NewErrorDTO(err)
+		log.Error("incorrect id", sl.Err(err))
+		http.Error(w, errDTO.String(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.profile.Delete(r.Context(), uint64(uid)); err != nil {
+		if errors.Is(err, repository.ErrUserNotFound) {
+			errDTO := NewErrorDTO(usecase.ErrInvalidCredentials)
+			http.Error(w, errDTO.String(), http.StatusBadRequest)
+			return
+		}
+
+		errDTO := NewErrorDTO(err)
+		http.Error(w, errDTO.String(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
