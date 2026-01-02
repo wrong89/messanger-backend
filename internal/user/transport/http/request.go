@@ -48,6 +48,10 @@ func (r LoginReqDTO) Validate() error {
 	return nil
 }
 
+type DeleteReqDTO struct {
+	ID uint64 `json:"id"`
+}
+
 type ErrorDTO struct {
 	Message string    `json:"message"`
 	Time    time.Time `json:"time"`
