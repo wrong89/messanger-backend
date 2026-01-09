@@ -68,6 +68,8 @@ func main() {
 			panic(err)
 		}
 
+		r.Use(userHTTP.AuthMiddleware)
+
 		chatUc := chatUC.NewChat(log, storage)
 		handler := chatHTTP.New(log, chatUc)
 
