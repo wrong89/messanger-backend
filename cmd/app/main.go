@@ -59,7 +59,8 @@ func main() {
 		r.Post("/register", handler.Register)
 		r.Post("/login", handler.Login)
 
-		r.With(userHTTP.AuthMiddleware).Delete("/delete/{id}", handler.Delete)
+		// todo: get id from Authorization token(not pattern)
+		r.With(userHTTP.AuthMiddleware).Delete("/", handler.Delete)
 	})
 
 	r.Route("/chat", func(r chi.Router) {

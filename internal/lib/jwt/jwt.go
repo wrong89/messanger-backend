@@ -27,6 +27,20 @@ func NewToken(user user.User, secret string, duration time.Duration) (string, er
 	return tokenString, nil
 }
 
+func ParseTokenWithClaims(token *jwt.Token) (jwt.MapClaims, error) {
+	claims := jwt.MapClaims{}
+
+	_, err := jwt.ParseWithClaims(token.Raw, claims, func(t *jwt.Token) (any, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil {
+		return jwt.MapClaims{}, err
+	}
+
+	return claims, nil
+}
+
 func ValidateToken(w http.ResponseWriter, r *http.Request) *jwt.Token {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
