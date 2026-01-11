@@ -4,10 +4,13 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	chatRepo "messanger/internal/chat/repository"
+	chatHTTP "messanger/internal/chat/transport/http"
+	chatUC "messanger/internal/chat/usecase"
 	"messanger/internal/lib/logger/handlers/slogpretty"
-	"messanger/internal/user/repository"
+	userRepo "messanger/internal/user/repository"
 	userHTTP "messanger/internal/user/transport/http"
-	"messanger/internal/user/usecase"
+	userUC "messanger/internal/user/usecase"
 	"net/http"
 	"os"
 	"time"
@@ -40,23 +43,43 @@ func main() {
 
 	log := setupLogger(envLocal, os.Stdout)
 
-	storage, err := repository.New(ctx, DATABASE_URL)
-	if err != nil {
-		panic(err)
-	}
-
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
 	r.Route("/user", func(r chi.Router) {
-		auth := usecase.NewAuth(log, storage, JWT_SECRET, time.Hour*24)
-		profile := usecase.NewProfile(log, storage)
+		storage, err := userRepo.New(ctx, DATABASE_URL)
+		if err != nil {
+			panic(err)
+		}
+
+		auth := userUC.NewAuth(log, storage, JWT_SECRET, time.Hour*24)
+		profile := userUC.NewProfile(log, storage)
 		handler := userHTTP.NewUserHandler(log, auth, profile)
 
 		r.Post("/register", handler.Register)
 		r.Post("/login", handler.Login)
 
-		r.With(userHTTP.AuthMiddleware).Delete("/delete/{id}", handler.Delete)
+		// todo: get id from Authorization token(not pattern)
+		r.With(userHTTP.AuthMiddleware).Delete("/", handler.Delete)
+	})
+
+	r.Route("/chat", func(r chi.Router) {
+		storage, err := chatRepo.New(ctx, DATABASE_URL)
+		if err != nil {
+			panic(err)
+		}
+
+		r.Use(userHTTP.AuthMiddleware)
+
+		chatUc := chatUC.NewChat(log, storage)
+		handler := chatHTTP.New(log, chatUc)
+
+		r.Post("/channel", handler.CreateChannel)
+		r.Post("/group", handler.CreateGroup)
+		r.Post("/private", handler.CreatePrivate)
+
+		r.Post("/join", handler.Join)
+		r.Post("/leave", handler.Leave)
 	})
 
 	log.Info("trying to start server...", slog.String("addr", SERVER_ADDR))

@@ -4,13 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"messanger/internal/lib/jwt"
 	"messanger/internal/lib/logger/sl"
 	"messanger/internal/user/repository"
 	"messanger/internal/user/usecase"
 	"net/http"
-	"strconv"
-
-	"github.com/go-chi/chi/v5"
 )
 
 type UserHandler struct {
@@ -110,22 +108,36 @@ func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		slog.String("op", op),
 	)
 
-	uidStr := chi.URLParam(r, "id")
-	if uidStr == "" {
-		log.Warn("id not found")
+	token := jwt.ValidateToken(w, r)
+	if token == nil {
+		log.Warn("token is empty")
+		http.Error(w, "token is empty", http.StatusUnauthorized)
+		return
+	}
+
+	claims, err := jwt.ParseTokenWithClaims(token)
+	if err != nil {
+		log.Error("token parsing error", sl.Err(err))
+		http.Error(w, "token parsing error", http.StatusBadRequest)
+		return
+	}
+
+	log.Debug("claims", slog.Any("obj", claims))
+
+	uid, ok := claims["uid"]
+	if !ok {
+		log.Warn("id not found", slog.Any("uid", claims["uid"]))
 		http.Error(w, "id not found", http.StatusBadRequest)
 		return
 	}
-
-	uid, err := strconv.Atoi(uidStr)
-	if err != nil {
-		errDTO := NewErrorDTO(err)
-		log.Error("incorrect id", sl.Err(err))
-		http.Error(w, errDTO.String(), http.StatusBadRequest)
+	uidNum, ok := uid.(float64)
+	if !ok {
+		log.Warn("uid is not parsed to int", slog.Any("uid", uid))
+		http.Error(w, "uid is not parsed", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.profile.Delete(r.Context(), uint64(uid)); err != nil {
+	if err := h.profile.Delete(r.Context(), uint64(uidNum)); err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
 			errDTO := NewErrorDTO(usecase.ErrInvalidCredentials)
 			http.Error(w, errDTO.String(), http.StatusBadRequest)
