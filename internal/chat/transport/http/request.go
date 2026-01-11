@@ -8,6 +8,9 @@ import (
 
 var (
 	ErrAddressIsEmpty = errors.New("address is empty")
+	ErrChatIdIsEmpty  = errors.New("chat_id is empty")
+	ErrUserIdIsEmpty  = errors.New("user_id is empty")
+	ErrRoleIsEmpty    = errors.New("role is empty")
 )
 
 type CreateChatReqDTO struct {
@@ -19,6 +22,40 @@ func (c CreateChatReqDTO) Validate() error {
 		return ErrAddressIsEmpty
 	}
 
+	return nil
+}
+
+type JoinChatReqDTO struct {
+	UserID uint64 `json:"user_id"`
+	ChatID uint64 `json:"chat_id"`
+	Role   string `json:"role"`
+}
+
+func (j JoinChatReqDTO) Validate() error {
+	if j.Role == "" {
+		return ErrRoleIsEmpty
+	}
+	if j.UserID == 0 {
+		return ErrUserIdIsEmpty
+	}
+	if j.ChatID == 0 {
+		return ErrChatIdIsEmpty
+	}
+	return nil
+}
+
+type LeaveChatReqDTO struct {
+	UserID uint64 `json:"user_id"`
+	ChatID uint64 `json:"chat_id"`
+}
+
+func (d *LeaveChatReqDTO) Validate() error {
+	if d.UserID == 0 {
+		return ErrUserIdIsEmpty
+	}
+	if d.ChatID == 0 {
+		return ErrChatIdIsEmpty
+	}
 	return nil
 }
 

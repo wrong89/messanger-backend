@@ -76,6 +76,9 @@ func main() {
 		r.Post("/channel", handler.CreateChannel)
 		r.Post("/group", handler.CreateGroup)
 		r.Post("/private", handler.CreatePrivate)
+
+		r.Post("/join", handler.Join)
+		r.Post("/leave", handler.Leave)
 	})
 
 	log.Info("trying to start server...", slog.String("addr", SERVER_ADDR))
