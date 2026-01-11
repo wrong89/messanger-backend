@@ -59,6 +59,17 @@ func (d *LeaveChatReqDTO) Validate() error {
 	return nil
 }
 
+// type GetByAddressReqDTO struct {
+// 	Address string `json:"address"`
+// }
+
+// func (d *GetByAddressReqDTO) Validate() error {
+// 	if d.Address == "" {
+// 		return ErrAddressIsEmpty
+// 	}
+// 	return nil
+// }
+
 type ErrorDTO struct {
 	Message string    `json:"message"`
 	Time    time.Time `json:"time"`

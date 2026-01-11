@@ -156,6 +156,8 @@ func (h *ChatHandler) Join(w http.ResponseWriter, r *http.Request) {
 
 	var joinChatDTO JoinChatReqDTO
 
+	w.Header().Get("Authorization")
+
 	if err := json.NewDecoder(r.Body).Decode(&joinChatDTO); err != nil {
 		errDTO := NewErrorDTO(err)
 		log.Warn(errDTO.String(), sl.Err(err))
@@ -210,5 +212,3 @@ func (h *ChatHandler) Leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
-// func (h *ChatHandler)
