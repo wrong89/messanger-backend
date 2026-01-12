@@ -155,3 +155,36 @@ func (s *Storage) Leave(ctx context.Context, userID uint64, chatID uint64) error
 
 	return nil
 }
+
+func (s *Storage) GetChatIDSWithUser(ctx context.Context, userID uint64) ([]uint64, error) {
+	const op = "chat.repository.postgres.GetChatIDSWithUser"
+
+	sql := `SELECT chat_id FROM chat_members WHERE user_id = @user_id`
+	args := pgx.NamedArgs{
+		"user_id": userID,
+	}
+
+	rows, err := s.db.Query(ctx, sql, args)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	values, err := rows.Values()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	chatIDS := make([]uint64, 0, len(values))
+
+	for _, v := range values {
+		userID, ok := v.(uint64)
+		fmt.Println("USER ID", userID)
+		if !ok {
+			continue
+		}
+
+		chatIDS = append(chatIDS, userID)
+	}
+
+	return chatIDS, nil
+}

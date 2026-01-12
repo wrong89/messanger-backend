@@ -14,6 +14,7 @@ type ChatRepo interface {
 type ChatReader interface {
 	GetByID(ctx context.Context, id uint64) (chat.Chat, error)
 	GetByAddress(ctx context.Context, address string) (chat.Chat, error)
+	GetChatIDSWithUser(ctx context.Context, userID uint64) ([]uint64, error)
 }
 
 type ChatWriter interface {
